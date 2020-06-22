@@ -1,28 +1,13 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "allowJs": true,
-    "target": "es5",
-    "module": "commonjs",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "strict": true,
-    "baseUrl": "./",
+    "baseUrl": ".",
+    "outDir": "./lib",
     "paths": {
       "@core/*": ["./src/core/*"],
-      "@api/*": ["./src/api/*"],
-      "@scheduler/*": ["scheduler/*"],
-      "@helpers/*": ["helpers/*"]
-    },
-    "strictPropertyInitialization": false,
-    "moduleResolution": "node",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "typeRoots": ["node_modules/@types", "src/@types"],
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+      "@helpers/*": ["./src/helpers/*"],
+      "@config/*": ["./src/config/*"]
+    }
   },
-  "include": ["src", "__tests__"]
+  "include": ["./src/**/*", "./__tests__/**/*"]
 }

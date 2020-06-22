@@ -1,133 +1,82 @@
-/* eslint-disable import/no-dynamic-require */
-/* eslint-disable class-methods-use-this */
-
-import Observable from "./Observable";
-import ModuleLoader from "./ModuleLoader";
+import { IsTask, ResultData, IsPipeline, LOG_LEVEL } from "src/types/core";
 import {
-  IsTask,
-  IsPipeline,
-  IsLogger,
-  Configuration,
-  PipelineConfiguration
-} from "../types";
+  ERROR_SOURCEDATA_NOT_OVERRIDEN,
+  TASK_NOT_FOUND,
+  PIPELINE_NOT_FOUND
+} from "@config/Messages";
 
-export class Task extends Observable implements IsTask {
-  public moduleLoader: ModuleLoader;
-  public rawData: any;
-  public id: string;
-  public description: string;
-  public config: PipelineConfiguration;
-  public rawDataFrom: any;
-  public params: {};
-  public logger: IsLogger;
-  public pipeline: IsPipeline;
-  public result: [];
+export abstract class Task implements IsTask {
+  id: string;
+  description?: string | undefined;
+  result: ResultData | null;
+  skip?: boolean | undefined;
+  sourceTaskId?: string;
+  pipeline: IsPipeline;
 
-  constructor(
-    id: string,
-    params: {},
-    config: Configuration,
-    description: string = "",
-    rawDataFrom: any = null
-  ) {
-    super();
-    this.moduleLoader = ModuleLoader.getInstance();
-    this.pipeline = require("./Pipeline");
-    this.id = id;
-    this.description = description;
-    this.config = config.pipelineConfiguration;
-    this.logger = config.logger;
-    this.rawDataFrom = rawDataFrom;
-    this.params = params; /** TODO - apparently, it is not being used - confirm later and then remove  */
-    this.result = [];
-
-    Task.validateConfiguration(this.config);
-
-    this.rawData = null;
+  constructor(_id: string, _description?: string, _sourceTaskId?: string) {
+    this.id = _id;
+    this.description = _description;
+    this.sourceTaskId = _sourceTaskId;
   }
 
-  setRawData(data: any) {
-    this.logger.log("Setting up raw data");
-    this.rawData = data;
-  }
-
-  validateConditionsForExecution(data: any) {
-    return true;
-  }
-
-  onError(err: string) {
-    this.logger.error(`Task ${this.id} generared error: ${err}`);
-    super.onError(err);
-  }
-
-  onSuccess(data: any) {
-    this.logger.log(`Task ${this.id} completed successfully`);
-    super.onSuccess(data);
-  }
-
-  getPipeline() {
+  getPipeline(): IsPipeline {
     return this.pipeline;
   }
 
-  getRawData() {
-    /** This function gets raw data that usually are results from other previous tasks in the pipeline
-     * This function will always need to be overwritten by task class in plugin implementation
-     */
-
-    const data = this.rawDataFrom
-      ? this.getPipeline().getResult(this.rawDataFrom)
-      : null;
-
-    if (!data) {
-      this.logger.log("No data provided");
-    }
-    return data;
-  }
-
-  static isFunction(object: {} | Function) {
-    return typeof object === "function";
-  }
-
-  getFunction(object: {} | Function) {
-    if (Task.isFunction(object)) {
-      return object;
-    }
-    return this.moduleLoader.loadFunction(object);
-  }
-
-  static validateConfiguration(config: PipelineConfiguration) {
-    if (!config) {
-      throw new TypeError("Configuration object is required");
+  getSourceData(): ResultData {
+    if (this.sourceTaskId) {
+      if (this.pipeline) {
+        const sourceTask = this.pipeline.getTask(this.sourceTaskId);
+        if (sourceTask) {
+          return sourceTask.getResult();
+        } else {
+          throw new Error(TASK_NOT_FOUND);
+        }
+      } else {
+        throw new Error(PIPELINE_NOT_FOUND);
+      }
+    } else {
+      throw new Error(ERROR_SOURCEDATA_NOT_OVERRIDEN);
     }
   }
-
-  async run() {
-    this.logger.log(`Starting task ${this.id}`);
-    this.save(await this.preExecute(), "pre");
-    this.save(await this.execute());
-    this.save(await this.postExecute(), "post");
-    this.logger.log(`Ending task ${this.id}`);
+  save(data: ResultData | null): Promise<ResultData> {
+    this.result = data;
+    return new Promise<ResultData>((resolve, reject) => {
+      try {
+        resolve(this.result);
+      } catch (err) {
+        reject(err);
+      }
+    });
   }
 
-  async save(data: any, prefix?: string) {
-    if (data) {
-      this.getPipeline().addResult({
-        ...this,
-        prefix,
-        result: data
-      });
-    }
+  setSkip(_skip: boolean): void {
+    this.skip = _skip;
   }
 
-  async preExecute() {
-    return null;
+  getResult(): Promise<ResultData> {
+    return new Promise<ResultData>((resolve, reject) => {
+      resolve(this.result);
+    });
   }
 
-  async execute() {
-    return null;
+  run(): Promise<ResultData> {
+    return new Promise<ResultData>((resolve, reject) => {
+      this.execute()
+        .then(result => {
+          this.save(result)
+            .then(result => {
+              resolve(result);
+            })
+            .catch(err => {
+              reject(err);
+            });
+        })
+        .catch(err => {
+          reject(err);
+        });
+    });
   }
 
-  async postExecute() {
-    return null;
-  }
+  abstract execute(): Promise<ResultData>;
 }

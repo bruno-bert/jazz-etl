@@ -1,71 +1,37 @@
-import { isPreTask, isPostTask } from "../helpers";
-import { IsTask, IsPipeline } from "../types";
+import { IsPipeline, IsTask, IsApplication, IsLogger } from "src/types/core";
+import { DefaultLogger } from "./DefaultLogger";
 
-class Pipeline implements IsPipeline {
-  private static instance: Pipeline;
+export class Pipeline implements IsPipeline {
+  logger: IsLogger;
+  app: IsApplication;
+  tasks: IsTask[];
 
-  public items: IsTask[];
-
-  private results: IsTask[];
-
-  private constructor() {
-    this.items = [];
-    this.results = [];
+  setApplication(_app: IsApplication): void {
+    this.app = _app;
+    this.logger = this.app?.logger || new DefaultLogger();
   }
-
-  static getInstance(): Pipeline {
-    if (!Pipeline.instance) {
-      Pipeline.instance = new Pipeline();
-    }
-    return Pipeline.instance;
+  getApplication(): IsApplication {
+    return this.app;
   }
-
-  addTask(task: IsTask) {
-    this.items.push(task);
-    return this;
-  }
-
-  addResult(task: IsTask) {
-    this.results.push(task);
-    return this;
-  }
-
-  getResult(taskName: string, prefix?: string): {} | [] | null {
-    let task = null;
-    const isPre = isPreTask(taskName);
-    const isPost = isPostTask(taskName);
-    let theTaskName = taskName;
-    let thePrefix = prefix;
-
-    if (isPre) {
-      thePrefix = "pre";
-    } else if (isPost) {
-      thePrefix = "post";
+  addTask(newTask: IsTask): void {
+    if (!this.tasks) {
+      this.tasks = [];
     }
 
-    theTaskName = taskName.replace("pre-", "").replace("post-", "");
-
-    if (!thePrefix) {
-      task =
-        this.results && this.results.length > 0
-          ? this.results.filter(item => item.id === theTaskName)[0]
-          : null;
-    } else {
-      task =
-        this.results && this.results.length > 0
-          ? this.results.filter(
-              item => item.id === theTaskName && item.prefix === thePrefix
-            )[0]
-          : null;
+    if (
+      this.tasks.indexOf(newTask) === -1 &&
+      !this.tasks.find(task => task.id === newTask.id)
+    ) {
+      newTask.pipeline = this;
+      this.tasks.push(newTask);
     }
-
-    return task ? task.result : null;
   }
+  getTask(taskId: string): IsTask | null {
+    const task = this.tasks.find(task => {
+      task.id === taskId;
+    });
 
-  clear() {
-    this.items = [];
-    this.results = [];
+    if (task) return task;
+    else return null;
   }
 }
-
-export default Pipeline;

@@ -1,0 +1,43 @@
+{
+  "name": "@jazz-etl/jazz-plugin-xmltojson",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "dev": "ts-node-dev  -r tsconfig-paths/register   --respawn --transpileOnly --ignore-watch node_modules --no-notify src/index.ts",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "jest --watch",
+    "test:once": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://github.com/bruno-bert/jazz-etl#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bruno-bert/jazz-etl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bruno-bert/jazz-etl/issues"
+  },
+  "peerDependencies": {
+    "@jazz-etl/jazz-core": "1.0.0"
+  },
+  "devDependencies": {
+    "@jazz-etl/jazz-core": "1.0.0",
+    "@types/jest": "^26.0.0",
+    "@types/node": "^14.0.13",
+    "@types/xml2js": "^0.4.5",
+    "jest": "^26.0.1",
+    "reflect-metadata": "^0.1.13",
+    "ts-jest": "^26.1.0",
+    "ts-node-dev": "^1.0.0-pre.45",
+    "tsconfig-paths": "^3.9.0",
+    "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "xml2js": "^0.4.23"
+  }
+}
