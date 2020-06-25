@@ -4,7 +4,7 @@ export class DefaultLogger implements IsLogger {
   debug: boolean;
 
   constructor() {
-    this.debug = true;
+    this.debug = false;
   }
 
   setDebug(_debug: boolean): void {
