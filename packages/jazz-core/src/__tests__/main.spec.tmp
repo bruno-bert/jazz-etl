@@ -9,72 +9,14 @@ import { Pipeline } from "@core/Pipeline";
 import { Task } from "@core/Task";
 import {
   ResultData,
-  IsPipelineBuilder,
-  IsPipeline,
   SourceData,
-  IsTaskCacheHandler,
-  IsTaskCacheHandlerConfiguration,
-  TargetDataIdentifier,
-  IsApplication
-} from "src/types/core";
-import { Plugin } from "@core/Plugin";
+  IsApplication,
+  SourceDataIdentifier
+} from "../types/core";
+import { MockTask } from "./mocks/MockTask";
+import { MockPlugin } from "./mocks/MockPlugin";
 
-class CustomCacheHandler implements IsTaskCacheHandler {
-  config: IsTaskCacheHandlerConfiguration;
-  getSourceData() {
-    return new Promise<SourceData>((resolve, reject) => {
-      resolve(null);
-    });
-  }
-
-  save(
-    targetId: TargetDataIdentifier,
-    data: Promise<ResultData>
-  ): Promise<ResultData> {
-    return new Promise<ResultData>((resolve, reject) => {
-      resolve(data);
-    });
-  }
-  getResult(): Promise<ResultData> {
-    throw new Error("Method not implemented.");
-  }
-}
-
-class MockTask extends Task {
-  execute(): Promise<ResultData> {
-    return new Promise<ResultData>((resolve, reject) => {
-      try {
-        const data = this.getSourceData();
-        resolve(data);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-}
-
-class MockPipelineBuilder implements IsPipelineBuilder {
-  build(): IsPipeline {
-    const pipeline = new Pipeline();
-    let task1 = new MockTask({ id: "1" });
-    let task2 = new MockTask({ id: "2" });
-    let task3 = new MockTask({ id: "3" });
-    let task4 = new MockTask({ id: "4" });
-    pipeline.addTask(task1);
-    pipeline.addTask(task2);
-    pipeline.addTask(task3);
-    pipeline.addTask(task4);
-    return pipeline;
-  }
-}
-
-class MockPlugin extends Plugin {
-  constructor() {
-    super(new MockPipelineBuilder());
-  }
-}
-
-describe("Application Tests", () => {
+describe("main", () => {
   let app: IsApplication;
   beforeEach(() => {
     app = Application.getInstance();
@@ -165,11 +107,9 @@ describe("Application Tests", () => {
   });
 
   it("Should run a task standalone and return an error in case task has no sourceTaskId and getSourceData is not overriden", async () => {
-    let task = new MockTask({ id: "1" });
+    let task = new MockTask({ id: "teste" });
 
-    await expect(task.run()).rejects.toThrowError(
-      ERROR_SOURCEDATA_NOT_OVERRIDEN
-    );
+    await expect(task.run()).rejects.toMatch(ERROR_SOURCEDATA_NOT_OVERRIDEN);
   });
 
   it("Should run a task standalone which has method getSourceData overriden", async () => {
@@ -223,63 +163,6 @@ describe("Application Tests", () => {
     app.start((err: string | null, result: string | null) => {
       expect(app.pipelines[0].tasks.length).toEqual(1);
     });
-  });
-
-  it("Should be able to inform a custom task cache handler for standalone task", async () => {
-    let testResult = { message: "this has the data" };
-    let cacher = new (class extends CustomCacheHandler {
-      getSourceData() {
-        return new Promise<SourceData>((resolve, reject) => {
-          resolve(testResult);
-        });
-      }
-    })();
-
-    let task = new MockTask({ taskCacheHandler: cacher });
-
-    await expect(task.run()).resolves.toBe(testResult);
-  });
-
-  it("Should ignore custom task cache handler from a task that inside a pipeline (must conside the handler on pipeline level)", async () => {
-    let testResultTaskLevel = {
-      message: "this has the data- from cacher in task"
-    };
-    let testResultPipelineLevel = {
-      message: "this has the data - from cacher in pipeline"
-    };
-
-    let cacherTask = new (class extends CustomCacheHandler {
-      getSourceData() {
-        return new Promise<SourceData>((resolve, reject) => {
-          resolve(testResultTaskLevel);
-        });
-      }
-    })();
-
-    let cacherApp = new (class extends CustomCacheHandler {
-      getSourceData() {
-        return new Promise<SourceData>((resolve, reject) => {
-          resolve(testResultPipelineLevel);
-        });
-      }
-    })();
-
-    /** refresh the app instance */
-    app.detach();
-    app = Application.getInstance({
-      taskCacheHandler: cacherApp
-    });
-
-    const pipeline = new Pipeline();
-    let task1 = new MockTask({ taskCacheHandler: cacherTask });
-    let task2 = new MockTask({ taskCacheHandler: cacherTask });
-    pipeline.addTask(task1);
-    pipeline.addTask(task2);
-    app.addPipeline(pipeline);
-    await expect(pipeline.all()).resolves.toEqual([
-      testResultPipelineLevel,
-      testResultPipelineLevel
-    ]);
   });
 
   it("Should run task standalone and wait result using async/await", async () => {

@@ -6,12 +6,16 @@ import {
   SourceData,
   IsObserver,
   IsTaskNotification,
-  TaskEvent
-} from "src/types/core";
+  TaskEvent,
+  CacheStatus,
+  IsTaskObserver,
+  IsCacheNotification
+} from "../types/core";
 
 import { createUUID } from "@helpers/index";
-import { InMemoryTaskCacheHandler } from "./InMemoryTaskCacheHandler";
+import { DefaultTaskCacheHandler } from "./DefaultTaskCacheHandler";
 import { INVALID_SOURCE_TASK_ID } from "@config/Messages";
+import _ from "lodash";
 
 export abstract class Task implements IsTask {
   id: string;
@@ -21,7 +25,7 @@ export abstract class Task implements IsTask {
   isAborted: boolean;
   sourceTaskIds?: string[];
   taskCacheHandler: IsTaskCacheHandler;
-  subscribers: IsObserver[];
+  subscribers: IsTaskObserver[];
 
   constructor(taskConfiguration?: IsTaskConfiguration) {
     this.id = taskConfiguration?.id || createUUID();
@@ -31,15 +35,40 @@ export abstract class Task implements IsTask {
       this.setSourceTaskIds(taskConfiguration.sourceTaskIds);
 
     this.taskCacheHandler =
-      taskConfiguration?.taskCacheHandler ||
-      InMemoryTaskCacheHandler.getInstance();
+      taskConfiguration?.taskCacheHandler || new DefaultTaskCacheHandler();
 
+    // this.taskCacheHandler.subscribeOnCache(this);
     this.inProgress = false;
     this.isAborted = false;
     this.skip = false;
 
     this.subscribers = [];
-    this.subscribe(this.taskCacheHandler);
+  }
+  readyToRun(taskIds: string[]): boolean {
+    if (this.sourceTaskIds) {
+      const intersection = taskIds.filter(value =>
+        this.sourceTaskIds?.includes(value)
+      );
+      console.log("quais eu preciso", this.sourceTaskIds);
+      console.log("quais o cache ja tem", taskIds);
+      console.log("intersecao", intersection);
+      return _.isEqual(intersection, this.sourceTaskIds);
+    } else {
+      return false;
+    }
+  }
+
+  cacheNotificationArrived(notification: IsCacheNotification): void {
+    console.log("chegou notificacao na task: ", this.id);
+    if (this.readyToRun(notification.taskIds)) {
+      console.log(`Task ${this.id} is ready to run`);
+
+      this.run().finally(() => {
+        this.taskCacheHandler.unsubscribeFromCache(this);
+      });
+    } else {
+      console.log(`Task ${this.id} not ready to run`);
+    }
   }
 
   abstract execute(): Promise<ResultData>;
@@ -51,8 +80,9 @@ export abstract class Task implements IsTask {
   abort(): void {
     this.isAborted = true;
     this.notify({ taskId: this.id, taskEvent: TaskEvent.TASK_ABORTED });
+    this.taskCacheHandler.updateCache({ taskId: this.id }, CacheStatus.ABORTED);
   }
-  setInProgress(progress: boolean): void {
+  setProgress(progress: boolean): void {
     this.inProgress = progress;
 
     if (this.inProgress) {
@@ -66,6 +96,7 @@ export abstract class Task implements IsTask {
   setSkip(_skip: boolean): void {
     this.skip = _skip;
     this.notify({ taskId: this.id, taskEvent: TaskEvent.TASK_SKIPPED });
+    this.taskCacheHandler.updateCache({ taskId: this.id }, CacheStatus.SKIPPED);
   }
 
   notify(notification: IsTaskNotification): void {
@@ -109,16 +140,15 @@ export abstract class Task implements IsTask {
     }
   }
 
-  getSourceData(): Promise<SourceData> {
+  getSourceData(): Promise<SourceData[] | SourceData> {
     return this.taskCacheHandler.getSourceData({ taskIds: this.sourceTaskIds });
   }
 
   save(data: ResultData | null): Promise<ResultData> {
-    this.notify({ taskId: this.id, taskEvent: TaskEvent.TASK_SAVED });
     return this.taskCacheHandler.save({ taskId: this.id }, data);
   }
 
-  setError(err: string) {
+  notifyError(err: string) {
     this.notify({
       taskId: this.id,
       taskEvent: TaskEvent.TASK_CONCLUDED_WITH_ERROR
@@ -126,29 +156,52 @@ export abstract class Task implements IsTask {
   }
 
   run(): Promise<ResultData> {
-    this.setInProgress(true);
+    this.setProgress(true);
+
     return new Promise<ResultData>((resolve, reject) => {
       if (!this.skip) {
-        this.execute()
-          .then(result => {
-            this.save(result)
+        this.taskCacheHandler
+          .updateCache({ taskId: this.id }, CacheStatus.PENDING)
+          .then(() => {
+            this.execute()
               .then(result => {
-                this.setInProgress(false);
-                resolve(result);
+                this.save(result)
+                  .then(result => {
+                    this.setProgress(false);
+                    resolve(result);
+                  })
+                  .catch(err => {
+                    this.notifyError(err);
+                    this.setProgress(false);
+
+                    this.taskCacheHandler
+                      .updateCache({ taskId: this.id }, CacheStatus.ERROR)
+                      .then(() => reject(`Error on Save ${err}`))
+                      .catch(err2 =>
+                        reject(
+                          `Error on Save: ${err}\nError on Update Cache: ${err2}`
+                        )
+                      );
+                  });
               })
               .catch(err => {
-                this.setError(err);
-                this.setInProgress(false);
-                reject(err);
+                this.notifyError(err);
+                this.setProgress(false);
+                this.taskCacheHandler
+                  .updateCache({ taskId: this.id }, CacheStatus.ERROR)
+                  .then(() => reject(`Error on Task Execution: ${err}`))
+                  .catch(err2 =>
+                    reject(
+                      `Error on Task Execution: ${err}\nError on Update Cache: ${err2}`
+                    )
+                  );
               });
           })
           .catch(err => {
-            this.setError(err);
-            this.setInProgress(false);
-            reject(err);
+            reject(`Error on trying to update cache to start task run: ${err}`);
           });
       } else {
-        this.setInProgress(false);
+        this.setProgress(false);
         resolve(null);
       }
     });

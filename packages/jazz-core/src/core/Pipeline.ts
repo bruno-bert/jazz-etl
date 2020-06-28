@@ -5,11 +5,11 @@ import {
   IsLogger,
   IsTaskCacheHandler,
   ResultData
-} from "src/types/core";
+} from "../types/core";
 import { DefaultLogger } from "./DefaultLogger";
-import { InMemoryTaskCacheHandler } from "./InMemoryTaskCacheHandler";
 import { createUUID } from "@helpers/index";
-import { INVALID_APP } from "@config/Messages";
+import { INVALID_APP, NONE_TASKS } from "@config/Messages";
+import { DefaultTaskCacheHandler } from "./DefaultTaskCacheHandler";
 
 export class Pipeline implements IsPipeline {
   id: string;
@@ -22,32 +22,20 @@ export class Pipeline implements IsPipeline {
     this.id = _id || createUUID();
   }
 
-  run(): Promise<ResultData> {
+  start(): Promise<ResultData> {
     if (!this.app) {
       return new Promise<ResultData>((resolve, reject) => {
         reject(INVALID_APP);
       });
     }
 
-    return Promise.all(
-      this.tasks.map(task => {
-        return task.run();
-      })
-    );
-  }
-
-  all(): Promise<ResultData[]> {
-    if (!this.app) {
-      return new Promise<ResultData[]>((resolve, reject) => {
-        reject(INVALID_APP);
+    if (!this.tasks || this.tasks.length === 0) {
+      return new Promise<ResultData>((resolve, reject) => {
+        reject(NONE_TASKS);
       });
     }
 
-    return Promise.all(
-      this.tasks.map(task => {
-        return task.run();
-      })
-    );
+    return this.tasks[0].run();
   }
 
   getId(): string {
@@ -58,7 +46,12 @@ export class Pipeline implements IsPipeline {
     this.app = _app;
     this.logger = this.app?.appConfig?.logger || new DefaultLogger();
     this.taskCacheHandler =
-      this.app?.getCacher() || InMemoryTaskCacheHandler.getInstance();
+      this.app?.getCacher() || new DefaultTaskCacheHandler();
+
+    this.tasks.forEach((task, index) => {
+      task.taskCacheHandler = this.taskCacheHandler;
+      if (index > 0) task.taskCacheHandler.subscribeOnCache(task);
+    });
   }
   getApplication(): IsApplication {
     return this.app;
@@ -72,7 +65,8 @@ export class Pipeline implements IsPipeline {
       this.tasks.indexOf(newTask) === -1 &&
       !this.tasks.find(task => task.id === newTask.id)
     ) {
-      newTask.taskCacheHandler = this.taskCacheHandler;
+      //newTask.taskCacheHandler = this.taskCacheHandler;
+      //newTask.taskCacheHandler.subscribeOnCache(newTask);
       this.tasks.push(newTask);
     }
   }

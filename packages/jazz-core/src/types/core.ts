@@ -25,12 +25,25 @@ export type IsTaskNotification = {
   data?: ResultData | null;
 };
 
-export interface IsTaskObservable extends IsObservable {
+export type IsCacheNotification = {
+  taskIds: string[];
+};
+
+export interface IsTaskObservable {
   notify(notification: IsTaskNotification): void;
   subscribe(observer: IsTask): void;
 }
 export interface IsTaskObserver {
   notify(notification: IsTaskNotification): void;
+}
+
+export interface IsCacheObservable {
+  cacheNotify(notification: IsCacheNotification): void;
+  subscribeOnCache(observer: IsCacheObserver): void;
+  unsubscribeFromCache(observer: IsCacheObserver): void;
+}
+export interface IsCacheObserver {
+  cacheNotificationArrived(notification: IsCacheNotification): void;
 }
 
 export interface IsTaskCacheHandlerConfiguration {
@@ -46,8 +59,14 @@ export type TargetDataIdentifier = {
   taskId: string;
 };
 
-export interface IsTaskCacheHandler extends IsTaskObserver {
+export interface IsTaskCacheHandler extends IsCacheObservable {
   config: IsTaskCacheHandlerConfiguration;
+
+  updateCache(
+    targetDataIdentifier: TargetDataIdentifier,
+    status: CacheStatus,
+    data?: ResultData | null
+  ): Promise<CachedResultData>;
 
   save(
     targetDataIdentifier: TargetDataIdentifier,
@@ -55,8 +74,7 @@ export interface IsTaskCacheHandler extends IsTaskObserver {
   ): Promise<ResultData>;
   getSourceData(
     sourceDataIdentifier: SourceDataIdentifier
-  ): Promise<SourceData[]>;
-  getResult(targetDataIdentifier: TargetDataIdentifier): ResultData | null;
+  ): Promise<SourceData[] | SourceData>;
 }
 
 export interface IsApplicationConfiguration {
@@ -97,22 +115,24 @@ export interface IsCommand {
   execute(): Promise<ResultData>;
 }
 
-export interface IsTask extends IsCommand, IsTaskObservable {
+export interface IsTask extends IsCommand, IsTaskObservable, IsCacheObserver {
   id: string;
   description?: string;
   skip?: boolean;
-  sourceTaskId?: string;
+  sourceTaskIds?: string[];
   taskCacheHandler?: IsTaskCacheHandler;
 
+  readyToRun(taskIds: string[]): boolean;
   abort(): void;
-  setInProgress(progress: boolean): void;
+  notifyError(err: string): void;
+  setProgress(progress: boolean): void;
   setSourceTaskIds(ids: string[]): void;
   addSourceTaskId(id: string): void;
 
   getId(): string;
   run(): Promise<ResultData>;
   save(data: ResultData | null): Promise<ResultData>;
-  getSourceData(): Promise<ResultData>;
+  getSourceData(): Promise<SourceData[] | SourceData>;
   setSkip(skip: boolean): void;
 }
 
@@ -137,8 +157,7 @@ export interface IsPipeline {
   getId(): string;
   setApplication(app: IsApplication): void;
   getApplication(): IsApplication;
-  run(): Promise<ResultData>;
-  all(): Promise<ResultData[]>;
+  start(): Promise<ResultData>;
   addTask(task: IsTask): void;
   getTask(taskId: string): IsTask | null;
 }
@@ -147,9 +166,6 @@ export interface IsApplication {
   appConfig?: IsApplicationConfiguration;
   pipelines: IsPipeline[];
   detach(): void;
-  getResultByPipeline(pipelineId: string): ResultData;
-  getResult(): ResultData;
-  getResultByTask(taskId: string): ResultData;
   getCacher(): IsTaskCacheHandler;
   start(cb: (err: string | null, result: string | null) => void): void;
   addPipeline(pipeline: IsPipeline): void;

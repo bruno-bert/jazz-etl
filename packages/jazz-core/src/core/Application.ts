@@ -11,7 +11,7 @@ import {
 
 import { SUCCESS_MESSAGE, EMPTY_PIPELINE } from "@config/Messages";
 import { DefaultLogger } from "./DefaultLogger";
-import { InMemoryTaskCacheHandler } from "./InMemoryTaskCacheHandler";
+import { DefaultTaskCacheHandler } from "./DefaultTaskCacheHandler";
 
 export class Application implements IsApplication {
   private static instance: IsApplication | null;
@@ -24,7 +24,7 @@ export class Application implements IsApplication {
     this.pipelines = appConfig?.pipelines || [];
     this.logger = appConfig?.logger || new DefaultLogger();
     this.taskCacheHandler =
-      appConfig?.taskCacheHandler || InMemoryTaskCacheHandler.getInstance();
+      appConfig?.taskCacheHandler || new DefaultTaskCacheHandler();
   }
 
   detach(): void {
@@ -36,16 +36,6 @@ export class Application implements IsApplication {
       Application.instance = new Application(appConfig);
     }
     return Application.instance;
-  }
-
-  getResultByPipeline(pipelineId: string): ResultData {
-    throw new Error("Method not implemented.");
-  }
-  getResult(): ResultData {
-    throw new Error("Method not implemented.");
-  }
-  getResultByTask(taskId: string): ResultData {
-    throw new Error("Method not implemented.");
   }
 
   getCacher(): IsTaskCacheHandler {
