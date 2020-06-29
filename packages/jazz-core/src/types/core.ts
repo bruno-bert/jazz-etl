@@ -16,13 +16,14 @@ export enum TaskEvent {
   TASK_STARTED,
   TASK_SKIPPED,
   TASK_ABORTED,
-  TASK_SAVED,
+  TASK_COMPLETED,
   TASK_CONCLUDED_WITH_ERROR
 }
 export type IsTaskNotification = {
   taskId: string;
   taskEvent: TaskEvent;
   data?: ResultData | null;
+  message?: string;
 };
 
 export type IsCacheNotification = {
@@ -31,8 +32,13 @@ export type IsCacheNotification = {
 
 export interface IsTaskObservable {
   notify(notification: IsTaskNotification): void;
-  subscribe(observer: IsTask): void;
+  subscribe(observer: IsTaskObserver): void;
 }
+export interface IsPipelineObservable {
+  notify(notification: IsTaskNotification): void;
+  subscribe(observer: IsTaskObserver): void;
+}
+
 export interface IsTaskObserver {
   notify(notification: IsTaskNotification): void;
 }
@@ -119,6 +125,7 @@ export interface IsTask extends IsCommand, IsTaskObservable, IsCacheObserver {
   id: string;
   description?: string;
   skip?: boolean;
+  completed: boolean;
   sourceTaskIds?: string[];
   taskCacheHandler?: IsTaskCacheHandler;
 
@@ -134,6 +141,7 @@ export interface IsTask extends IsCommand, IsTaskObservable, IsCacheObserver {
   save(data: ResultData | null): Promise<ResultData>;
   getSourceData(): Promise<SourceData[] | SourceData>;
   setSkip(skip: boolean): void;
+  setCompleted(completed: boolean, data: ResultData): void;
 }
 
 export interface IsPipelineBuilder {
@@ -149,29 +157,39 @@ export interface IsPlugin {
   getPipelineByTaskIds(taskIds: string[]): IsPipeline | null;
 }
 
-export interface IsPipeline {
+export interface IsPipeline extends IsTaskObserver, IsPipelineObservable {
   id: string;
   tasks: IsTask[];
   logger: IsLogger;
+  completed: boolean;
   taskCacheHandler: IsTaskCacheHandler;
+  setCompleted(complete: boolean): void;
+  isCompleted(): boolean;
   getId(): string;
   setApplication(app: IsApplication): void;
   getApplication(): IsApplication;
-  start(): Promise<ResultData>;
-  addTask(task: IsTask): void;
+  start(cb: PipelineCallBack): void;
+  addTask(task: IsTask): IsPipeline;
   getTask(taskId: string): IsTask | null;
 }
 
-export interface IsApplication {
+export interface IsApplication extends IsTaskObserver {
   appConfig?: IsApplicationConfiguration;
   pipelines: IsPipeline[];
   detach(): void;
   getCacher(): IsTaskCacheHandler;
-  start(cb: (err: string | null, result: string | null) => void): void;
-  addPipeline(pipeline: IsPipeline): void;
+  start(cb: ApplicationCallBack): void;
+  addPipeline(pipeline: IsPipeline): IsApplication;
 }
 
-export type ApplicationCallback = (
-  err: string | null,
-  result: string | null
+export interface IsApplicationNotification extends IsTaskNotification {
+  completed: boolean;
+}
+export interface IsPipelineNotification extends IsTaskNotification {
+  completed: boolean;
+}
+
+export type ApplicationCallBack = (
+  notification: IsApplicationNotification
 ) => void;
+export type PipelineCallBack = (notification: IsPipelineNotification) => void;

@@ -27,17 +27,21 @@ describe("pipeline-simple", () => {
     const pipeline = new Pipeline();
     pipeline.addTask(task1);
     pipeline.addTask(task2);
-    expect(pipeline.start()).rejects.toEqual(INVALID_APP);
+    expect(pipeline.start(notification => {})).rejects.toEqual(INVALID_APP);
   });
 
-  it.only("Should call 2 tasks in pipeline and result a single result at the end with expected object transformation", () => {
+  it.only("Should call 2 tasks in pipeline and result a single result at the end with expected object transformation", done => {
     const task1 = new FirstTask({ id: "10" });
     const task2 = new SecondTask({ id: "20", sourceTaskIds: ["10"] });
     const pipeline = new Pipeline();
-    pipeline.addTask(task1);
-    pipeline.addTask(task2);
+    pipeline.addTask(task1).addTask(task2);
     app.addPipeline(pipeline);
-    //expect(pipeline.start()).resolves.toEqual(finalResult);
-    pipeline.start();
+
+    pipeline.start(notification => {
+      if (notification.completed) {
+        expect(notification.data).toEqual(finalResult);
+        done();
+      }
+    });
   });
 });

@@ -24,14 +24,10 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
   }
   unsubscribeFromCache(observer: IsCacheObserver): void {
     const index = this.subscribers.indexOf(observer);
-    console.log("unsub", index);
-    console.log("unsub-subscribers before", this.subscribers);
     this.subscribers.splice(index, 1);
-    console.log("unsub-subscribers after", this.subscribers);
   }
 
   cacheNotify(notification: IsCacheNotification): void {
-    console.log("notificando");
     this.subscribers.forEach(subscriber => {
       subscriber.cacheNotificationArrived(notification);
     });
@@ -92,11 +88,7 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
           status: CacheStatus.DONE
         };
 
-        console.log("salvando");
-
         const index = this.indexInCache(targetDataIdentifier);
-
-        console.log("index", index);
 
         if (index === -1) {
           this.results.push(cachedResult);
@@ -104,19 +96,13 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
           this.results[index] = cachedResult;
         }
 
-        console.log("result", this.results);
-
         const cacheNotification: IsCacheNotification = {
           taskIds: this.results.map(result => {
             return result!.id;
           })
         };
 
-        console.log("notification", cacheNotification);
-        console.log("subscribers", this.subscribers);
-
         this.cacheNotify(cacheNotification);
-
         resolve(cachedResult?.data);
       } catch (err) {
         reject(err);
@@ -142,17 +128,14 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
         ) as CachedResultData | null;
 
         if (!fromCache) {
-          console.log("nao esta no cache", i);
           continue;
         }
 
         if (fromCache?.status === CacheStatus.PENDING) {
-          console.log("esta PENDENTE no cache", fromCache.id);
           continue;
         }
 
         if (fromCache?.status === CacheStatus.DONE) {
-          console.log("esta PRONTO no cache", fromCache.id);
           sourceDatas.push(fromCache.data || null);
           continue;
         }
@@ -162,7 +145,6 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
           fromCache?.status === CacheStatus.ERROR ||
           fromCache?.status === CacheStatus.SKIPPED
         ) {
-          console.log(`esta ABORTADO ou ERRO na task ${fromCache.id}`, i);
           reject(`Task ${fromCache.id} aborted or skipped or error`);
           return;
         }
