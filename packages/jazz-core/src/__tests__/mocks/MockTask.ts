@@ -1,4 +1,4 @@
-import { Task } from "@core/Task";
+import { Task } from "@core/task/Task";
 import { ResultData } from "../../types/core";
 
 export class MockTask extends Task {

@@ -1,5 +1,5 @@
-import { IsPlugin, IsPipeline, IsPipelineBuilder, IsTask } from "../types/core";
-import { Pipeline } from "./Pipeline";
+import { IsPlugin, IsPipeline, IsPipelineBuilder, IsTask } from "../../types/core";
+import { Pipeline } from "../pipeline/Pipeline";
 
 export abstract class Plugin implements IsPlugin {
   name: string;

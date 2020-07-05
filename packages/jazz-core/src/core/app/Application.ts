@@ -10,11 +10,11 @@ import {
   IsTaskNotification,
   IsApplicationNotification,
   TaskEvent
-} from "../types/core";
+} from "../../types/core";
 
 import { SUCCESS_MESSAGE, EMPTY_PIPELINE } from "@config/Messages";
-import { DefaultLogger } from "./DefaultLogger";
-import { DefaultTaskCacheHandler } from "./DefaultTaskCacheHandler";
+import { DefaultLogger } from "../logger/DefaultLogger";
+import { DefaultTaskCacheHandler } from "../cache/DefaultTaskCacheHandler";
 
 export class Application implements IsApplication {
   private static instance: IsApplication | null;
@@ -102,14 +102,10 @@ export class Application implements IsApplication {
     };
     return notification;
   }
-  start(cb: ApplicationCallBack): void {
-    try {
-      Application.applicationCallBack = cb;
-      if (this.pipelines.length === 0) {
-        this.logger.log(EMPTY_PIPELINE, LOG_LEVEL.WARN);
-      }
-    } catch (err) {
-      cb(Application.createNotification({ message: err }));
+  start(cb?: ApplicationCallBack): void {
+    if (typeof cb === "function") Application.applicationCallBack = cb;
+    if (this.pipelines.length === 0) {
+      throw new Error(EMPTY_PIPELINE);
     }
   }
 }

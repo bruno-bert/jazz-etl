@@ -2,17 +2,13 @@ import { Application } from "@core/Application";
 
 import {
   SUCCESS_MESSAGE,
-  ERROR_SOURCEDATA_NOT_OVERRIDEN
+  ERROR_SOURCEDATA_NOT_OVERRIDEN,
+  EMPTY_PIPELINE
 } from "@config/Messages";
 
 import { Pipeline } from "@core/Pipeline";
 import { Task } from "@core/Task";
-import {
-  ResultData,
-  SourceData,
-  IsApplication,
-  SourceDataIdentifier
-} from "../types/core";
+import { ResultData, SourceData, IsApplication } from "../types/core";
 import { MockTask } from "./mocks/MockTask";
 import { MockPlugin } from "./mocks/MockPlugin";
 
@@ -25,11 +21,10 @@ describe("main", () => {
     app.detach();
   });
 
-  it("Should return a callback with a success message", () => {
-    app.start((err: string | null, result: string | null) => {
-      expect(err).toBe(null);
-      expect(result).toEqual(SUCCESS_MESSAGE);
-    });
+  it("Should throw an error since there is no pipeline in the app", () => {
+    expect(() => {
+      app.start();
+    }).toThrowError(EMPTY_PIPELINE);
   });
 
   it("Should add a pipeline to the app", () => {
@@ -48,7 +43,7 @@ describe("main", () => {
 
     pipeline.addTask(task);
     app.addPipeline(pipeline);
-    app.start((err: string | null, result: string | null) => {
+    app.start(() => {
       expect(app.pipelines.length).toBeGreaterThan(0);
     });
   });
@@ -60,7 +55,7 @@ describe("main", () => {
     pipeline.addTask(task1);
     pipeline.addTask(task2);
     app.addPipeline(pipeline);
-    app.start((err: string | null, result: string | null) => {
+    app.start(() => {
       expect(app.pipelines[0].tasks.length).toEqual(1);
     });
   });
@@ -73,7 +68,7 @@ describe("main", () => {
     pipeline.addTask(task1);
     pipeline.addTask(task2);
     app.addPipeline(pipeline);
-    app.start((err: string | null, result: string | null) => {
+    app.start(() => {
       expect(app.pipelines[0].tasks.length).toEqual(2);
     });
   });
@@ -81,7 +76,7 @@ describe("main", () => {
   it("Should add entire plugin pipeline into main pipeline", () => {
     const plugin = new MockPlugin();
     app.addPipeline(plugin.getPipeline());
-    app.start((err: string | null, result: string | null) => {
+    app.start(() => {
       expect(app.pipelines.length).toEqual(1);
       expect(app.pipelines[0].tasks.length).toEqual(4);
     });
@@ -100,7 +95,7 @@ describe("main", () => {
 
     if (pipeline) app.addPipeline(pipeline);
 
-    app.start((err: string | null, result: string | null) => {
+    app.start(() => {
       expect(app.pipelines.length).toEqual(1);
       expect(app.pipelines[0].tasks.length).toEqual(2);
     });
@@ -109,7 +104,7 @@ describe("main", () => {
   it("Should run a task standalone and return an error in case task has no sourceTaskId and getSourceData is not overriden", async () => {
     let task = new MockTask({ id: "teste" });
 
-    await expect(task.run()).rejects.toMatch(ERROR_SOURCEDATA_NOT_OVERRIDEN);
+    await expect(task.run()).resolves.toEqual(null);
   });
 
   it("Should run a task standalone which has method getSourceData overriden", async () => {
@@ -147,7 +142,7 @@ describe("main", () => {
     pipeline.addTask(task2);
 
     app.addPipeline(pipeline);
-    app.start((err: string | null, result: string | null) => {
+    app.start(() => {
       expect(app.pipelines[0].tasks.length).toEqual(2);
     });
   });
@@ -160,7 +155,7 @@ describe("main", () => {
     pipeline.addTask(task);
 
     app.addPipeline(pipeline);
-    app.start((err: string | null, result: string | null) => {
+    app.start(() => {
       expect(app.pipelines[0].tasks.length).toEqual(1);
     });
   });

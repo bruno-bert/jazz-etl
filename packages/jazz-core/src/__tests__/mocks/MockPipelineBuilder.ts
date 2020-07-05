@@ -1,5 +1,5 @@
 import { IsPipelineBuilder, IsPipeline } from "../../types/core";
-import { Pipeline } from "@core/Pipeline";
+import { Pipeline } from "@core/pipeline/Pipeline";
 import { MockTask } from "./MockTask";
 
 export class MockPipelineBuilder implements IsPipelineBuilder {

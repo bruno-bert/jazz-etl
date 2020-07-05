@@ -4,17 +4,17 @@ import {
   IsApplication,
   IsLogger,
   IsTaskCacheHandler,
-  ResultData,
   PipelineCallBack,
   IsTaskNotification,
   IsTaskObserver,
   IsPipelineNotification,
-  TaskEvent
-} from "../types/core";
-import { DefaultLogger } from "./DefaultLogger";
+  Payload,
+  TaskStatus
+} from "../../types/core";
+import { DefaultLogger } from "../logger/DefaultLogger";
 import { createUUID } from "@helpers/index";
 import { INVALID_APP, NONE_TASKS } from "@config/Messages";
-import { DefaultTaskCacheHandler } from "./DefaultTaskCacheHandler";
+import { DefaultTaskCacheHandler } from "../cache/DefaultTaskCacheHandler";
 import { timeStamp } from "console";
 
 export class Pipeline implements IsPipeline {
@@ -48,7 +48,10 @@ export class Pipeline implements IsPipeline {
 
   checkCompleteness() {
     const pendingOrNotCompletedTasks = this.tasks.filter(task => {
-      return task.completed === false;
+      return (
+        task.status === TaskStatus.TASK_PENDING ||
+        task.status === TaskStatus.TASK_STARTED
+      );
     });
 
     const thereArePendingTasks = pendingOrNotCompletedTasks.length > 0;
@@ -56,39 +59,45 @@ export class Pipeline implements IsPipeline {
   }
 
   notify(notification: IsTaskNotification): void {
-    this.setCompleted(this.checkCompleteness());
+    const completed = this.checkCompleteness();
+    this.setCompleted(completed);
 
-    if (this.completed) {
-      this.pipelineCallBack(
-        this.createNotification({
-          taskId: notification.taskId,
-          taskEvent: notification.taskEvent,
-          data: notification.data || {},
-          message: notification.message,
-          completed: this.completed
-        })
-      );
+    if (this.pipelineCallBack) {
+      if (
+        this.completed ||
+        notification.taskStatus === TaskStatus.TASK_CONCLUDED_WITH_ERROR
+      ) {
+        this.pipelineCallBack(
+          this.createNotification({
+            taskId: notification.taskId,
+            taskStatus: notification.taskStatus,
+            data: notification.data || {},
+            message: notification.message,
+            completed: this.completed
+          })
+        );
 
-      this.subscribers.forEach(subscriber => {
-        subscriber.notify(notification);
-      });
+        this.subscribers.forEach(subscriber => {
+          subscriber.notify(notification);
+        });
+      }
     }
   }
 
-  start(cb: PipelineCallBack): Promise<ResultData> {
+  start(cb?: PipelineCallBack): Promise<Payload> {
     if (!this.app) {
-      return new Promise<ResultData>((resolve, reject) => {
+      return new Promise<Payload>((resolve, reject) => {
         reject(INVALID_APP);
       });
     }
 
     if (!this.tasks || this.tasks.length === 0) {
-      return new Promise<ResultData>((resolve, reject) => {
+      return new Promise<Payload>((resolve, reject) => {
         reject(NONE_TASKS);
       });
     }
 
-    this.pipelineCallBack = cb;
+    if (typeof cb === "function") this.pipelineCallBack = cb;
     return this.tasks[0].run();
   }
 
@@ -140,14 +149,14 @@ export class Pipeline implements IsPipeline {
 
   createNotification({
     taskId = "",
-    taskEvent = -1,
+    taskStatus = TaskStatus.TASK_PENDING,
     data = {},
     message = "",
     completed = false
   }) {
     const notification: IsPipelineNotification = {
       taskId: taskId,
-      taskEvent: taskEvent,
+      taskStatus: taskStatus,
       data: data,
       message: message,
       completed: completed

@@ -21,7 +21,7 @@ describe("pipeline-simple", () => {
     expect(createTask).toThrowError(INVALID_SOURCE_TASK_ID);
   });
 
-  it("Should raise error to pipeline without application", () => {
+  it("Should throw an error to pipeline without application", () => {
     const task1 = new FirstTask({ id: "10" });
     const task2 = new SecondTask({ id: "20", sourceTaskIds: ["10"] });
     const pipeline = new Pipeline();
@@ -30,7 +30,7 @@ describe("pipeline-simple", () => {
     expect(pipeline.start(notification => {})).rejects.toEqual(INVALID_APP);
   });
 
-  it.only("Should call 2 tasks in pipeline and result a single result at the end with expected object transformation", done => {
+  it("Should call 2 tasks in pipeline and result a single result at the end with expected object transformation", done => {
     const task1 = new FirstTask({ id: "10" });
     const task2 = new SecondTask({ id: "20", sourceTaskIds: ["10"] });
     const pipeline = new Pipeline();

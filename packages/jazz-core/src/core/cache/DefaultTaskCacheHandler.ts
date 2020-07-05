@@ -1,20 +1,20 @@
 import {
   IsTaskCacheHandler,
-  ResultData,
+  Payload,
   IsTaskCacheHandlerConfiguration,
   SourceData,
   TargetDataIdentifier,
   SourceDataIdentifier,
-  CachedResultData,
+  CachedPayload,
   CacheStatus,
   IsCacheNotification,
   IsCacheObserver
-} from "../types/core";
+} from "../../types/core";
 
 import { ERROR_SOURCEDATA_NOT_OVERRIDEN } from "@config/Messages";
 
 export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
-  results: CachedResultData[];
+  results: CachedPayload[];
   subscribers: IsCacheObserver[];
   config: IsTaskCacheHandlerConfiguration;
 
@@ -51,11 +51,11 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
   updateCache(
     targetDataIdentifier: TargetDataIdentifier,
     status: CacheStatus,
-    data?: ResultData
-  ): Promise<CachedResultData> {
-    return new Promise<CachedResultData>((resolve, reject) => {
+    data?: Payload
+  ): Promise<CachedPayload> {
+    return new Promise<CachedPayload>((resolve, reject) => {
       try {
-        const cachedResult: CachedResultData = {
+        const cachedResult: CachedPayload = {
           id: targetDataIdentifier.taskId,
           data: data,
           status: status
@@ -69,41 +69,17 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
           this.results[index] = cachedResult;
         }
 
-        resolve(cachedResult);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
+        if (status !== CacheStatus.PENDING) {
+          const cacheNotification: IsCacheNotification = {
+            taskIds: this.results.map(result => {
+              return result!.id;
+            })
+          };
 
-  save(
-    targetDataIdentifier: TargetDataIdentifier,
-    data?: ResultData
-  ): Promise<ResultData> {
-    return new Promise<ResultData>((resolve, reject) => {
-      try {
-        const cachedResult: CachedResultData = {
-          id: targetDataIdentifier.taskId,
-          data: data,
-          status: CacheStatus.DONE
-        };
-
-        const index = this.indexInCache(targetDataIdentifier);
-
-        if (index === -1) {
-          this.results.push(cachedResult);
-        } else {
-          this.results[index] = cachedResult;
+          this.cacheNotify(cacheNotification);
         }
 
-        const cacheNotification: IsCacheNotification = {
-          taskIds: this.results.map(result => {
-            return result!.id;
-          })
-        };
-
-        this.cacheNotify(cacheNotification);
-        resolve(cachedResult?.data);
+        resolve(cachedResult);
       } catch (err) {
         reject(err);
       }
@@ -115,7 +91,7 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
   ): Promise<SourceData[] | SourceData> {
     return new Promise<SourceData[] | SourceData>((resolve, reject) => {
       const ids = sourceDataIdentifier?.taskIds;
-      let sourceDatas: ResultData[] = [];
+      let sourceDatas: Payload[] = [];
 
       if (!ids) {
         reject(ERROR_SOURCEDATA_NOT_OVERRIDEN);
@@ -125,7 +101,7 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
       for (let i = 0; i < ids!.length; i++) {
         let fromCache = this.results.find(
           result => result!.id === ids![i]
-        ) as CachedResultData | null;
+        ) as CachedPayload | null;
 
         if (!fromCache) {
           continue;
@@ -141,11 +117,10 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
         }
 
         if (
-          fromCache?.status === CacheStatus.ABORTED ||
           fromCache?.status === CacheStatus.ERROR ||
           fromCache?.status === CacheStatus.SKIPPED
         ) {
-          reject(`Task ${fromCache.id} aborted or skipped or error`);
+          reject(`Task ${fromCache.id} skipped or raised error`);
           return;
         }
       }

@@ -1,4 +1,4 @@
-import { IsLogger, LOG_LEVEL } from "../types/core";
+import { IsLogger, LOG_LEVEL } from "../../types/core";
 
 export class DefaultLogger implements IsLogger {
   debug: boolean;

@@ -12,17 +12,17 @@ export interface IsObserver {
   notify(message: {}): void;
 }
 
-export enum TaskEvent {
-  TASK_STARTED,
-  TASK_SKIPPED,
-  TASK_ABORTED,
-  TASK_COMPLETED,
-  TASK_CONCLUDED_WITH_ERROR
+export enum TaskStatus {
+  TASK_PENDING = "TASK_PENDING",
+  TASK_STARTED = "TASK_STARTED",
+  TASK_SKIPPED = "TASK_SKIPPED",
+  TASK_COMPLETED = "TASK_COMPLETED",
+  TASK_CONCLUDED_WITH_ERROR = "TASK_CONCLUDED_WITH_ERROR"
 }
 export type IsTaskNotification = {
   taskId: string;
-  taskEvent: TaskEvent;
-  data?: ResultData | null;
+  taskStatus: TaskStatus;
+  data?: Payload | null;
   message?: string;
 };
 
@@ -71,13 +71,9 @@ export interface IsTaskCacheHandler extends IsCacheObservable {
   updateCache(
     targetDataIdentifier: TargetDataIdentifier,
     status: CacheStatus,
-    data?: ResultData | null
-  ): Promise<CachedResultData>;
+    data?: Payload | null
+  ): Promise<CachedPayload>;
 
-  save(
-    targetDataIdentifier: TargetDataIdentifier,
-    data?: ResultData | null
-  ): Promise<ResultData>;
   getSourceData(
     sourceDataIdentifier: SourceDataIdentifier
   ): Promise<SourceData[] | SourceData>;
@@ -92,7 +88,7 @@ export interface IsApplicationConfiguration {
 export interface IsTaskConfiguration {
   id?: string;
   description?: string;
-  sourceTaskIds?: string[];
+  dependencies?: string[];
   taskCacheHandler?: IsTaskCacheHandler;
 }
 
@@ -102,46 +98,38 @@ export interface IsLogger {
   log(message: string, level?: LOG_LEVEL): void;
 }
 
-export type ResultData = {} | null;
+export type Payload = {} | null;
 export enum CacheStatus {
   PENDING,
   DONE,
   ERROR,
-  ABORTED,
   SKIPPED
 }
-export type CachedResultData = {
+export type CachedPayload = {
   id: string;
   status: CacheStatus;
-  data?: ResultData | null;
+  data?: Payload | null;
 } | null;
 export type SourceData = {} | null;
 
 export interface IsCommand {
-  execute(): Promise<ResultData>;
+  execute(): Promise<Payload>;
 }
 
 export interface IsTask extends IsCommand, IsTaskObservable, IsCacheObserver {
   id: string;
   description?: string;
-  skip?: boolean;
-  completed: boolean;
-  sourceTaskIds?: string[];
+  status: TaskStatus;
+  dependsOn?: string[];
   taskCacheHandler?: IsTaskCacheHandler;
 
-  readyToRun(taskIds: string[]): boolean;
-  abort(): void;
-  notifyError(err: string): void;
-  setProgress(progress: boolean): void;
-  setSourceTaskIds(ids: string[]): void;
-  addSourceTaskId(id: string): void;
+  setDependencies(ids: string[]): void;
+  addDependency(id: string): void;
 
   getId(): string;
-  run(): Promise<ResultData>;
-  save(data: ResultData | null): Promise<ResultData>;
+  run(): Promise<Payload>;
+  save(data: Payload | null): Promise<Payload>;
   getSourceData(): Promise<SourceData[] | SourceData>;
-  setSkip(skip: boolean): void;
-  setCompleted(completed: boolean, data: ResultData): void;
 }
 
 export interface IsPipelineBuilder {
@@ -168,7 +156,7 @@ export interface IsPipeline extends IsTaskObserver, IsPipelineObservable {
   getId(): string;
   setApplication(app: IsApplication): void;
   getApplication(): IsApplication;
-  start(cb: PipelineCallBack): void;
+  start(cb?: PipelineCallBack): void;
   addTask(task: IsTask): IsPipeline;
   getTask(taskId: string): IsTask | null;
 }
@@ -178,7 +166,7 @@ export interface IsApplication extends IsTaskObserver {
   pipelines: IsPipeline[];
   detach(): void;
   getCacher(): IsTaskCacheHandler;
-  start(cb: ApplicationCallBack): void;
+  start(cb?: ApplicationCallBack): void;
   addPipeline(pipeline: IsPipeline): IsApplication;
 }
 

@@ -1,4 +1,4 @@
-import { Plugin } from "@core/Plugin";
+import { Plugin } from "@core/plugin/Plugin";
 import { MockPipelineBuilder } from "./MockPipelineBuilder";
 
 export class MockPlugin extends Plugin {
