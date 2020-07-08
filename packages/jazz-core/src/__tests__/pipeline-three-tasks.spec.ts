@@ -1,6 +1,11 @@
 import { Application } from "@core/app/Application";
 import { Pipeline } from "@core/pipeline/Pipeline";
-import { IsApplication, TaskStatus, IsTaskNotification } from "../types/core";
+import {
+  IsApplication,
+  TaskStatus,
+  IsTaskNotification,
+  IsPipelineNotification
+} from "../types/core";
 import {
   finalResult,
   secondTaskResult
@@ -31,7 +36,7 @@ describe("pipeline-three-tasks", () => {
       .addTask(task3);
     app.addPipeline(pipeline);
 
-    pipeline.start(notification => {
+    pipeline.start((notification: IsPipelineNotification) => {
       if (notification.completed) {
         expect(notification.data).toEqual(finalResult);
         done();
@@ -52,7 +57,7 @@ describe("pipeline-three-tasks", () => {
 
     task3.setSkip(true);
 
-    pipeline.start(notification => {
+    pipeline.start((notification: IsPipelineNotification) => {
       try {
         if (notification.completed) {
           expect(notification.data).toEqual(secondTaskResult);
@@ -104,7 +109,7 @@ describe("pipeline-three-tasks", () => {
 
     task1.setSkip(true);
 
-    pipeline.start((notification: IsTaskNotification) => {
+    pipeline.start((notification: IsPipelineNotification) => {
       try {
         if (notification.taskId === "20") {
           expect(notification.taskStatus).toEqual(

@@ -1,17 +1,16 @@
+import { ERROR_SOURCEDATA_NOT_OVERRIDEN } from "@config/Messages";
 import {
   IsTaskCacheHandler,
-  Payload,
-  IsTaskCacheHandlerConfiguration,
-  SourceData,
-  TargetDataIdentifier,
-  SourceDataIdentifier,
   CachedPayload,
-  CacheStatus,
+  IsCacheObserver,
+  IsTaskCacheHandlerConfiguration,
   IsCacheNotification,
-  IsCacheObserver
+  TargetDataIdentifier,
+  CacheStatus,
+  Payload,
+  SourceDataIdentifier,
+  SourceData
 } from "../../types/core";
-
-import { ERROR_SOURCEDATA_NOT_OVERRIDEN } from "@config/Messages";
 
 export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
   results: CachedPayload[];

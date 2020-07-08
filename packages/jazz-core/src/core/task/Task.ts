@@ -11,7 +11,7 @@ import {
   IsCacheNotification
 } from "../../types/core";
 
-import { createUUID } from "@helpers/index";
+import { createUUID } from "@helpers/uuid";
 import { DefaultTaskCacheHandler } from "../cache/DefaultTaskCacheHandler";
 import { INVALID_SOURCE_TASK_ID } from "@config/Messages";
 
@@ -39,7 +39,7 @@ export abstract class Task implements IsTask {
     this.subscribers = [];
   }
 
-  abstract execute(): Promise<Payload>;
+  abstract execute(data: SourceData | SourceData[]): Promise<Payload>;
 
   private existsDependency(id: string): boolean {
     const exists = this.dependsOn?.find(taskId => taskId === id);
@@ -123,75 +123,33 @@ export abstract class Task implements IsTask {
 
   run(): Promise<Payload> {
     return new Promise<Payload>((resolve, reject) => {
-      if (!this.skip) {
-        this.status = TaskStatus.TASK_STARTED;
+      const handleError = (err: string) => {
+        this.status = TaskStatus.TASK_CONCLUDED_WITH_ERROR;
+
         this.notify({
           taskId: this.id,
           taskStatus: this.status,
-          message: `Task ${this.id} started`
+          message: `Task ${this.id} concluded with error: ${err} `
         });
 
         this.taskCacheHandler
-          .updateCache({ taskId: this.id }, CacheStatus.PENDING)
-          .then(() => {
-            this.execute()
-              .then(result => {
-                this.save(result)
-                  .then(result => {
-                    this.status = TaskStatus.TASK_COMPLETED;
+          .updateCache({ taskId: this.id }, CacheStatus.ERROR)
+          .then(() => reject(err))
+          .catch(err2 => reject(err2));
+      };
 
-                    this.notify({
-                      taskId: this.id,
-                      taskStatus: this.status,
-                      message: `Task ${this.id} Completed`,
-                      data: result
-                    });
+      const handlePostSave = (result: Payload) => {
+        this.status = TaskStatus.TASK_COMPLETED;
+        this.notify({
+          taskId: this.id,
+          taskStatus: this.status,
+          message: `Task ${this.id} Completed`,
+          data: result
+        });
+        resolve(result);
+      };
 
-                    resolve(result);
-                  })
-                  .catch(err => {
-                    this.status = TaskStatus.TASK_CONCLUDED_WITH_ERROR;
-
-                    this.notify({
-                      taskId: this.id,
-                      taskStatus: this.status,
-                      message: `Task ${this.id} concluded with error: ${err} `
-                    });
-
-                    this.taskCacheHandler
-                      .updateCache({ taskId: this.id }, CacheStatus.ERROR)
-                      .then(() => reject(err))
-                      .catch(err2 => reject(err2));
-                  });
-              })
-              .catch(err => {
-                this.status = TaskStatus.TASK_CONCLUDED_WITH_ERROR;
-
-                this.notify({
-                  taskId: this.id,
-                  taskStatus: this.status,
-                  message: `Task ${this.id} concluded with error: ${err} `
-                });
-
-                this.taskCacheHandler
-                  .updateCache({ taskId: this.id }, CacheStatus.ERROR)
-                  .then(() => {
-                    reject(err);
-                  })
-                  .catch(err2 => reject(err2));
-              });
-          })
-          .catch(err => {
-            this.status = TaskStatus.TASK_CONCLUDED_WITH_ERROR;
-
-            this.notify({
-              taskId: this.id,
-              taskStatus: this.status,
-              message: `Task ${this.id} concluded with error: ${err} `
-            });
-            reject(err);
-          });
-      } else {
+      const handleSkip = () => {
         this.status = TaskStatus.TASK_SKIPPED;
 
         this.notify({
@@ -201,6 +159,33 @@ export abstract class Task implements IsTask {
         });
 
         resolve(null);
+      };
+
+      const handleExecute = (data: SourceData | SourceData[]) => {
+        this.status = TaskStatus.TASK_STARTED;
+        this.notify({
+          taskId: this.id,
+          taskStatus: this.status,
+          message: `Task ${this.id} started`
+        });
+
+        this.execute(data)
+          .then(result => {
+            this.save(result)
+              .then(result => {
+                handlePostSave(result);
+              })
+              .catch(err => handleError(err));
+          })
+          .catch(err => handleError(err));
+      };
+
+      if (this.skip) {
+        handleSkip();
+      } else {
+        this.getSourceData()
+          .then(data => handleExecute(data))
+          .catch(err => handleError(err));
       }
     });
   }

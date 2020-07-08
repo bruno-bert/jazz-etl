@@ -12,7 +12,7 @@ import {
   TaskStatus
 } from "../../types/core";
 import { DefaultLogger } from "../logger/DefaultLogger";
-import { createUUID } from "@helpers/index";
+import { createUUID } from "@helpers/uuid";
 import { INVALID_APP, NONE_TASKS } from "@config/Messages";
 import { DefaultTaskCacheHandler } from "../cache/DefaultTaskCacheHandler";
 import { timeStamp } from "console";

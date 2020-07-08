@@ -1,20 +1,17 @@
+import { EMPTY_PIPELINE } from "@config/Messages";
+import { DefaultLogger } from "../logger/DefaultLogger";
+import { DefaultTaskCacheHandler } from "../cache/DefaultTaskCacheHandler";
 import {
   IsApplication,
   IsLogger,
   IsPipeline,
-  ApplicationCallBack,
-  LOG_LEVEL,
   IsTaskCacheHandler,
   IsApplicationConfiguration,
-  ResultData,
+  ApplicationCallBack,
   IsTaskNotification,
   IsApplicationNotification,
-  TaskEvent
+  TaskStatus
 } from "../../types/core";
-
-import { SUCCESS_MESSAGE, EMPTY_PIPELINE } from "@config/Messages";
-import { DefaultLogger } from "../logger/DefaultLogger";
-import { DefaultTaskCacheHandler } from "../cache/DefaultTaskCacheHandler";
 
 export class Application implements IsApplication {
   private static instance: IsApplication | null;
@@ -45,7 +42,7 @@ export class Application implements IsApplication {
     const appNotification: IsApplicationNotification = Application.createNotification(
       {
         taskId: notification.taskId,
-        taskEvent: notification.taskEvent,
+        taskStatus: notification.taskStatus,
         data: notification.data || {},
         message: notification.message,
         completed: completed
@@ -88,14 +85,14 @@ export class Application implements IsApplication {
 
   static createNotification({
     taskId = "",
-    taskEvent = -1,
+    taskStatus = TaskStatus.TASK_PENDING,
     data = {},
     message = "",
     completed = false
   }) {
     const notification: IsApplicationNotification = {
       taskId: taskId,
-      taskEvent: taskEvent,
+      taskStatus: taskStatus,
       data: data,
       message: message,
       completed: completed

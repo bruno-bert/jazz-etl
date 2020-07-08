@@ -112,17 +112,14 @@ export type CachedPayload = {
 } | null;
 export type SourceData = {} | null;
 
-export interface IsCommand {
-  execute(): Promise<Payload>;
-}
-
-export interface IsTask extends IsCommand, IsTaskObservable, IsCacheObserver {
+export interface IsTask extends IsTaskObservable, IsCacheObserver {
   id: string;
   description?: string;
   status: TaskStatus;
   dependsOn?: string[];
   taskCacheHandler?: IsTaskCacheHandler;
 
+  execute(data: SourceData | SourceData[]): Promise<Payload>;
   setDependencies(ids: string[]): void;
   addDependency(id: string): void;
 

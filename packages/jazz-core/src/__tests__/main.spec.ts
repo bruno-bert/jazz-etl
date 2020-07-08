@@ -1,16 +1,15 @@
-import { Application } from "@core/Application";
+import { Application } from "@core/app/Application";
 
 import {
-  SUCCESS_MESSAGE,
   ERROR_SOURCEDATA_NOT_OVERRIDEN,
   EMPTY_PIPELINE
 } from "@config/Messages";
 
-import { Pipeline } from "@core/Pipeline";
-import { Task } from "@core/Task";
-import { ResultData, SourceData, IsApplication } from "../types/core";
-import { MockTask } from "./mocks/MockTask";
-import { MockPlugin } from "./mocks/MockPlugin";
+import { Pipeline } from "@core/pipeline/Pipeline";
+import { Task } from "@core/task/Task";
+import { MockTask } from "./mocks/main/MockTask";
+import { MockPlugin } from "./mocks/main/MockPlugin";
+import { IsApplication, SourceData, Payload } from "../types/core";
 
 describe("main", () => {
   let app: IsApplication;
@@ -30,8 +29,8 @@ describe("main", () => {
   it("Should add a pipeline to the app", () => {
     const pipeline = new Pipeline();
     let task = new (class MyTask extends Task {
-      execute(): Promise<ResultData> {
-        return new Promise<ResultData>((resolve, reject) => {
+      execute(data: SourceData | SourceData[]): Promise<Payload> {
+        return new Promise<Payload>((resolve, reject) => {
           try {
             resolve({ data: "some data" });
           } catch (err) {
@@ -104,7 +103,7 @@ describe("main", () => {
   it("Should run a task standalone and return an error in case task has no sourceTaskId and getSourceData is not overriden", async () => {
     let task = new MockTask({ id: "teste" });
 
-    await expect(task.run()).resolves.toEqual(null);
+    await expect(task.run()).rejects.toEqual(ERROR_SOURCEDATA_NOT_OVERRIDEN);
   });
 
   it("Should run a task standalone which has method getSourceData overriden", async () => {
@@ -163,17 +162,20 @@ describe("main", () => {
   it("Should run task standalone and wait result using async/await", async () => {
     let testResult = { message: "this has the data" };
     let task = new (class MyTask extends Task {
-      execute(): Promise<ResultData> {
-        return new Promise<ResultData>((resolve, reject) => {
-          try {
-            resolve(testResult);
-          } catch (err) {
-            reject(err);
-          }
+      getSourceData() {
+        return new Promise<SourceData>((resolve, reject) => {
+          resolve(testResult);
+        });
+      }
+      execute(data: SourceData | SourceData[]): Promise<Payload> {
+        return new Promise<Payload>((resolve, reject) => {
+          resolve(testResult);
         });
       }
     })();
-    const result = await task.run();
-    expect(result).toBe(testResult);
+    try {
+      const result = await task.run();
+      expect(result).toBe(testResult);
+    } catch (err) {}
   });
 });
