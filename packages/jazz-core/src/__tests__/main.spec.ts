@@ -107,20 +107,20 @@ describe("main", () => {
   });
 
   it("Should run a task standalone which has method getSourceData overriden", async () => {
-    const testResult = { message: "test" };
+    const testResult: SourceData = { taskId: "", payload: {} };
     let task = new (class OtherTask extends MockTask {
       getSourceData() {
         return new Promise<SourceData>((resolve, reject) => {
           resolve(testResult);
         });
       }
-    })({ id: "1" });
+    })();
 
-    await expect(task.run()).resolves.toEqual(testResult);
+    await expect(task.run()).resolves.toEqual([testResult]);
   });
 
   it("Should not run a skipped task and return null", async () => {
-    const testResult = { message: "test" };
+    const testResult: SourceData = { payload: {} };
     let task = new (class OtherTask extends MockTask {
       getSourceData() {
         return new Promise<SourceData>((resolve, reject) => {
@@ -160,7 +160,7 @@ describe("main", () => {
   });
 
   it("Should run task standalone and wait result using async/await", async () => {
-    let testResult = { message: "this has the data" };
+    const testResult: SourceData = { payload: {} };
     let task = new (class MyTask extends Task {
       getSourceData() {
         return new Promise<SourceData>((resolve, reject) => {

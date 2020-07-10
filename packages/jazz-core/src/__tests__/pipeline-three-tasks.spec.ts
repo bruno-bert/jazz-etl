@@ -27,8 +27,11 @@ describe("pipeline-three-tasks", () => {
 
   it("Should call 3 tasks in pipeline and result a single result at the end with expected object transformation", done => {
     const task1 = new FirstTask({ id: "10" });
-    const task2 = new SecondTask({ id: "20", dependencies: ["10"] });
-    const task3 = new ThirdTask({ id: "30", dependencies: ["20"] });
+    const task2 = new SecondTask({
+      id: "20",
+      dependencies: [{ taskId: "10" }]
+    });
+    const task3 = new ThirdTask({ id: "30", dependencies: [{ taskId: "20" }] });
     const pipeline = new Pipeline();
     pipeline
       .addTask(task1)
@@ -44,10 +47,13 @@ describe("pipeline-three-tasks", () => {
     });
   });
 
-  it("Should add 3 tasks in pipeline, but skip the 3rd whcih has no dependents, so the final result must be result of second task", done => {
+  it("Should add 3 tasks in pipeline, but skip the 3rd which has no dependents, so the final result must be result of second task", done => {
     const task1 = new FirstTask({ id: "10" });
-    const task2 = new SecondTask({ id: "20", dependencies: ["10"] });
-    const task3 = new ThirdTask({ id: "30", dependencies: ["20"] });
+    const task2 = new SecondTask({
+      id: "20",
+      dependencies: [{ taskId: "10" }]
+    });
+    const task3 = new ThirdTask({ id: "30", dependencies: [{ taskId: "20" }] });
     const pipeline = new Pipeline();
     pipeline
       .addTask(task1)
@@ -71,8 +77,11 @@ describe("pipeline-three-tasks", () => {
 
   it("Should add 3 tasks in pipeline, but skip the 2nd which has 3rd task as dependent, so pipeline should throw an error", done => {
     const task1 = new FirstTask({ id: "10" });
-    const task2 = new SecondTask({ id: "20", dependencies: ["10"] });
-    const task3 = new ThirdTask({ id: "30", dependencies: ["20"] });
+    const task2 = new SecondTask({
+      id: "20",
+      dependencies: [{ taskId: "10" }]
+    });
+    const task3 = new ThirdTask({ id: "30", dependencies: [{ taskId: "20" }] });
     const pipeline = new Pipeline();
     pipeline
       .addTask(task1)
@@ -98,8 +107,11 @@ describe("pipeline-three-tasks", () => {
 
   it("Should add 3 tasks in pipeline, but skip the first which has 2nd task as dependent, so pipeline should throw an error", done => {
     const task1 = new FirstTask({ id: "10" });
-    const task2 = new SecondTask({ id: "20", dependencies: ["10"] });
-    const task3 = new ThirdTask({ id: "30", dependencies: ["20"] });
+    const task2 = new SecondTask({
+      id: "20",
+      dependencies: [{ taskId: "10" }]
+    });
+    const task3 = new ThirdTask({ id: "30", dependencies: [{ taskId: "20" }] });
     const pipeline = new Pipeline();
     pipeline
       .addTask(task1)
