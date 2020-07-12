@@ -80,7 +80,6 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
             messages: this.messages
           };
 
-          console.log("cacheNotification", cacheNotification);
           this.cacheNotify(cacheNotification);
         }
 
@@ -119,7 +118,6 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
     return new Promise<CachedMessage[]>((resolve, reject) => {
       Promise.all(promises)
         .then(result => {
-          console.log("resultado do all promises", result);
           resolve(result);
         })
         .catch(err => {
@@ -130,8 +128,8 @@ export class DefaultTaskCacheHandler implements IsTaskCacheHandler {
 
   getSourceData(
     sourceDataIdentifier: SourceDataIdentifier
-  ): Promise<SourceData[] | SourceData> {
-    return new Promise<SourceData[] | SourceData>((resolve, reject) => {
+  ): Promise<SourceData[]> {
+    return new Promise<SourceData[]>((resolve, reject) => {
       const dependencies = sourceDataIdentifier?.dependencies;
       let sourceDatas: SourceData[] = [];
 

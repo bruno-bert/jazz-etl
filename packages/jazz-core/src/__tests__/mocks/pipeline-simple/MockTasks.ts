@@ -3,14 +3,14 @@ import { SourceData, Payload } from "../../../types/core";
 import { sourceInfo, SourceTestInfo, FinalResultInfo } from "./Factory";
 
 export class FirstTask extends Task {
-  getSourceData(): Promise<SourceData[] | SourceData> {
-    return new Promise<SourceData[] | SourceData>((resolve, reject) => {
-      resolve({ payload: sourceInfo });
+  getSourceData(): Promise<SourceData[]> {
+    return new Promise<SourceData[]>((resolve, reject) => {
+      resolve([{ payload: sourceInfo }]);
     });
   }
   execute(data: SourceData | SourceData[]): Promise<Payload> {
     return new Promise<Payload>(async (resolve, reject) => {
-      const source = (data as SourceData)?.payload as SourceTestInfo;
+      const source = (data as SourceData[])[0]?.payload as SourceTestInfo;
       resolve({ name: `${source.firstName} ${source.lastName}` });
     });
   }

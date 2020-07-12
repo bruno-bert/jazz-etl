@@ -23,6 +23,7 @@ describe("pipeline-properties", () => {
   });
 
   it("Should call 3 tasks, and the second and third tasks must receive different properties from the first task", done => {
+    const pipeline = new Pipeline();
     const task1 = new FirstTask({ id: "10" });
     const task2 = new SecondTask({
       id: "20",
@@ -32,7 +33,6 @@ describe("pipeline-properties", () => {
       id: "30",
       dependencies: [{ taskId: "10", property: "less-equal-five" }]
     });
-    const pipeline = new Pipeline();
 
     task1.addProperty({
       id: "bigger-than-five",
@@ -58,10 +58,8 @@ describe("pipeline-properties", () => {
     app.addPipeline(pipeline);
 
     pipeline.start((notification: IsPipelineNotification) => {
-      if (notification.taskId === "30") {
-        expect(notification.data).toEqual([1, 2, 3, 4, 5]);
-        done();
-      }
+      expect(notification.data).toEqual([1, 2, 3, 4, 5]);
+      done();
     });
   });
 });

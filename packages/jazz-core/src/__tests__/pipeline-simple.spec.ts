@@ -51,7 +51,6 @@ describe("pipeline-simple", () => {
 
     pipeline.start((notification: IsPipelineNotification) => {
       try {
-        console.log("callback ", notification);
         if (notification.completed) {
           expect(notification.data).toEqual(finalResult);
           done();

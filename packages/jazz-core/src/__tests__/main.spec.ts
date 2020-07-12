@@ -110,21 +110,21 @@ describe("main", () => {
     const testResult: SourceData = { taskId: "", payload: {} };
     let task = new (class OtherTask extends MockTask {
       getSourceData() {
-        return new Promise<SourceData>((resolve, reject) => {
-          resolve(testResult);
+        return new Promise<SourceData[]>((resolve, reject) => {
+          resolve([testResult]);
         });
       }
     })();
 
-    await expect(task.run()).resolves.toEqual([testResult]);
+    await expect(task.run()).resolves.toEqual([[testResult]]);
   });
 
   it("Should not run a skipped task and return null", async () => {
     const testResult: SourceData = { payload: {} };
     let task = new (class OtherTask extends MockTask {
       getSourceData() {
-        return new Promise<SourceData>((resolve, reject) => {
-          resolve(testResult);
+        return new Promise<SourceData[]>((resolve, reject) => {
+          resolve([testResult]);
         });
       }
     })({ id: "1" });
@@ -163,8 +163,8 @@ describe("main", () => {
     const testResult: SourceData = { payload: {} };
     let task = new (class MyTask extends Task {
       getSourceData() {
-        return new Promise<SourceData>((resolve, reject) => {
-          resolve(testResult);
+        return new Promise<SourceData[]>((resolve, reject) => {
+          resolve([testResult]);
         });
       }
       execute(data: SourceData | SourceData[]): Promise<Payload> {

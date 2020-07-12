@@ -51,6 +51,7 @@ export interface IsTaskObservable {
 export type TaskDependency = {
   taskId: string;
   property?: string;
+  label?: String;
 };
 
 export type TaskAppearance = {
@@ -70,9 +71,12 @@ export interface IsTask extends IsTaskObservable, IsCacheObserver {
   taskCacheHandler?: IsTaskCacheHandler;
 
   execute(data: SourceData | SourceData[]): Promise<Payload>;
+  getId(): string;
+  run(): Promise<Payload>;
+  save(data: Payload | null): Promise<Payload[]>;
+  getSourceData(): Promise<SourceData[]>;
 
-  setDependencies(dependencies: TaskDependency[]): void;
-
+  /** TODO - change these reponsabilities to a TaskBuilder */
   addDependency(dependency: TaskDependency): IsTask;
   setDependencies(dependencies: TaskDependency[]): IsTask;
   removeDependency(dependency: TaskDependency): IsTask;
@@ -80,11 +84,6 @@ export interface IsTask extends IsTaskObservable, IsCacheObserver {
   addProperty(property: TaskProperty): IsTask;
   setProperties(properties: TaskProperty[]): IsTask;
   removeProperty(property: TaskProperty): IsTask;
-
-  getId(): string;
-  run(): Promise<Payload>;
-  save(data: Payload | null): Promise<Payload[]>;
-  getSourceData(): Promise<SourceData[] | SourceData>;
 }
 
 export interface IsCacheObservable {
@@ -118,7 +117,7 @@ export interface IsTaskCacheHandler extends IsCacheObservable {
 
   getSourceData(
     sourceDataIdentifier: SourceDataIdentifier
-  ): Promise<SourceData[] | SourceData>;
+  ): Promise<SourceData[]>;
 }
 
 export interface IsApplicationConfiguration {

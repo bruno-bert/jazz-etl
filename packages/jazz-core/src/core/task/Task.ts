@@ -42,7 +42,6 @@ export abstract class Task implements IsTask {
 
     if (taskConfiguration?.dependencies) {
       if (this.isArrayOfStrings(taskConfiguration?.dependencies)) {
-        console.log("eh array");
         taskConfiguration.dependencies = this.stringToTaskDependency(
           taskConfiguration.dependencies as string[]
         );
@@ -52,6 +51,7 @@ export abstract class Task implements IsTask {
 
     if (taskConfiguration?.properties)
       this.setProperties(taskConfiguration.properties);
+    else this.properties = [];
 
     this.taskCacheHandler =
       taskConfiguration?.taskCacheHandler || new DefaultTaskCacheHandler();
@@ -219,7 +219,7 @@ export abstract class Task implements IsTask {
 
   /** END -  properties */
 
-  getSourceData(): Promise<SourceData[] | SourceData> {
+  getSourceData(): Promise<SourceData[]> {
     return this.taskCacheHandler.getSourceData({
       dependencies: this.dependencies
     });
@@ -231,7 +231,6 @@ export abstract class Task implements IsTask {
         ? this.propertyHandler.resolveAll(data, this.properties)
         : null;
 
-    //console.log("resolvedProperties", resolvedProperties);
     return this.taskCacheHandler
       .updateCache(
         { taskId: this.id },
