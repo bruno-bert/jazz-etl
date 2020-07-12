@@ -47,6 +47,8 @@ export abstract class Task implements IsTask {
         );
       }
       this.setDependencies(taskConfiguration.dependencies as TaskDependency[]);
+    } else {
+      this.dependencies = [];
     }
 
     if (taskConfiguration?.properties)
@@ -64,7 +66,12 @@ export abstract class Task implements IsTask {
     this.subscribers = [];
   }
 
-  abstract execute(data: SourceData | SourceData[]): Promise<Payload>;
+  execute(data: SourceData | SourceData[]): Promise<Payload> {
+    return new Promise<Payload>(async (resolve, reject) => {
+      // console.log("executing task", this.id);
+      resolve(data);
+    });
+  }
 
   private stringToTaskDependency(dependencies: string[]) {
     let deps: TaskDependency[] = [];
@@ -153,11 +160,12 @@ export abstract class Task implements IsTask {
       }
       return true;
     } else {
-      return false;
+      return true;
     }
   }
 
   onNotificationFromCache(notification: IsCacheNotification): void {
+    //console.log("onNotificationFromCache", notification);
     if (this.isReadyToRun(notification.messages)) {
       this.taskCacheHandler.unsubscribeFromCache(this);
       this.run().catch(err => {});
