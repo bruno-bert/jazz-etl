@@ -1,5 +1,5 @@
 import { Task } from "@core/task/Task";
-import { SourceData, Payload } from "../../../types/core";
+import { SourceData, Payload } from "../../types/core";
 
 export class MockTask extends Task {
   execute(data: SourceData): Promise<Payload> {

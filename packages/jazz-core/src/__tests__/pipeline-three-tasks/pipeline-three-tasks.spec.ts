@@ -5,16 +5,16 @@ import {
   TaskStatus,
   IsTaskNotification,
   IsPipelineNotification
-} from "../types/core";
+} from "../../types/core";
 import {
   finalResult,
   secondTaskResult
-} from "./mocks/pipeline-three-tasks/Factory";
+} from "./Factory";
 import {
   SecondTask,
   FirstTask,
   ThirdTask
-} from "./mocks/pipeline-three-tasks/MockTasks";
+} from "./MockTasks";
 
 describe("pipeline-three-tasks", () => {
   let app: IsApplication;

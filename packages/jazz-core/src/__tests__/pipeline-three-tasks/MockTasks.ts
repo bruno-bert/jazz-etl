@@ -1,6 +1,6 @@
 import { Task } from "@core/task/Task";
 import { sourceInfo, SourceTestInfo, FinalResultInfo } from "./Factory";
-import { SourceData, Payload } from "../../../types/core";
+import { SourceData, Payload } from "../../types/core";
 
 export class FirstTask extends Task {
   getSourceData(): Promise<SourceData[]> {

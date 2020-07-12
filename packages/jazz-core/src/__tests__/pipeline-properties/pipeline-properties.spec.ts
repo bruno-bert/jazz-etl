@@ -5,13 +5,13 @@ import {
   IsPipelineNotification,
   PropertyType,
   Payload
-} from "../types/core";
+} from "../../types/core";
 
 import {
   SecondTask,
   FirstTask,
   ThirdTask
-} from "./mocks/pipeline-properties/MockTasks";
+} from "./MockTasks";
 
 describe("pipeline-properties", () => {
   let app: IsApplication;

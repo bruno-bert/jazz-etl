@@ -1,7 +1,6 @@
 import { Task } from "@core/task/Task";
-import { SourceData, Payload } from "../../../types/core";
-
-export const sourceInfo = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+import { SourceData, Payload } from "../../types/core";
+import { sourceInfo, SourceTestInfo, FinalResultInfo } from "./Factory";
 
 export class FirstTask extends Task {
   getSourceData(): Promise<SourceData[]> {
@@ -11,7 +10,8 @@ export class FirstTask extends Task {
   }
   execute(data: SourceData | SourceData[]): Promise<Payload> {
     return new Promise<Payload>(async (resolve, reject) => {
-      resolve((data as SourceData[])[0]?.payload);
+      const source = (data as SourceData[])[0]?.payload as SourceTestInfo;
+      resolve({ name: `${source.firstName} ${source.lastName}` });
     });
   }
 }
@@ -19,15 +19,8 @@ export class FirstTask extends Task {
 export class SecondTask extends Task {
   execute(data: SourceData | SourceData[]): Promise<Payload> {
     return new Promise<Payload>(async (resolve, reject) => {
-      resolve((data as SourceData[])[0]?.payload);
-    });
-  }
-}
-
-export class ThirdTask extends Task {
-  execute(data: SourceData | SourceData[]): Promise<Payload> {
-    return new Promise<Payload>(async (resolve, reject) => {
-      resolve((data as SourceData[])[0]?.payload);
+      const source = (data as SourceData[])[0]?.payload as FinalResultInfo;
+      resolve({ name: `${source.name} Silva` });
     });
   }
 }

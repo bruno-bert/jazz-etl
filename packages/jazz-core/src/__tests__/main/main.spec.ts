@@ -7,9 +7,9 @@ import {
 
 import { Pipeline } from "@core/pipeline/Pipeline";
 import { Task } from "@core/task/Task";
-import { MockTask } from "./mocks/main/MockTask";
-import { MockPlugin } from "./mocks/main/MockPlugin";
-import { IsApplication, SourceData, Payload } from "../types/core";
+import { MockTask } from "./MockTask";
+import { MockPlugin } from "./MockPlugin";
+import { IsApplication, SourceData, Payload } from "../../types/core";
 
 describe("main", () => {
   let app: IsApplication;

@@ -5,9 +5,9 @@ import {
   IsApplication,
   IsTaskNotification,
   IsPipelineNotification
-} from "../types/core";
-import { finalResult } from "./mocks/pipeline-simple/Factory";
-import { SecondTask, FirstTask } from "./mocks/pipeline-simple/MockTasks";
+} from "../../types/core";
+import { finalResult } from "./Factory";
+import { SecondTask, FirstTask } from "./MockTasks";
 
 describe("pipeline-simple", () => {
   let app: IsApplication;
